@@ -23,10 +23,11 @@ unsigned long *sys_call_table = (unsigned long*)0xffffffff8e6001c0;
 asmlinkage int (*real_unlinkat)(int DirFileDescriptor, char* path, int Flag);
 
 //Reemplazando la llamada original con la llamada modificada
-asmlinkage int custom_unlikat(int DirFileDescriptor, char* path, int Flag)
+asmlinkage int custom_unlinkat(int DirFileDescriptor, char* path, int Flag)
 {
 	printk("interceptor: unlinkat(%d, \"%s\", %d)\n", DirFileDescriptor,path,Flag);
-	return real_unlinkat(DirFileDescriptor,path,Flag);
+	printk("Funciono primita querida :3");
+	return 0;
 }
 
 /*
@@ -64,7 +65,7 @@ static int __init init_my_module(void)
 	//guardando el valor de memoria de la llamada original
 	real_unlinkat = (void *)sys_call_table[__NR_unlinkat];
 	//insertando nuestra funcion a la direccion de memoria de openat
-	*(sys_call_table + __NR_unlinkat) = (unsigned long)custom_unlikat;
+	*(sys_call_table + __NR_unlinkat) = (unsigned long)custom_unlinkat;
 	printk("hizo el cambio de pagina");
 	return 0;
 }
