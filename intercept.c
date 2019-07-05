@@ -17,16 +17,16 @@ MODULE_LICENSE("GPL");
 // tomar la direccion de sys_call_table
 //realizar cada vez que se reinicie el sistema puesto que la direccion cambia
 
-unsigned long *sys_call_table = (unsigned long*)0xffffffff8e6001c0;
+unsigned long *sys_call_table = (unsigned long*)0xffffffffbb6001c0;
 
 //puntero de la funcion del sys_openat
-asmlinkage int (*real_open)(const char* __user, int, int);
+asmlinkage int (*real_unlinkat)(int DirFileDescriptor, char* path, int Flag);
 
 //Reemplazando la llamada original con la llamada modificada
-asmlinkage int custom_open(const char* __user file_name, int flags, int mode)
+asmlinkage int custom_unlikat(int DirFileDescriptor, char* path, int Flag)
 {
-	printk("interceptor: open(\"%s\", %X, %X)\n", file_name,flags,mode);
-	return real_open(file_name,flags,mode);
+	printk("interceptor: unlinkat(%d, \"%s\", %d)\n", DirFileDescriptor,path,Flag);
+	return real_unlinkat(DirFileDescriptor,path,Flag);
 }
 
 /*
@@ -62,9 +62,9 @@ static int __init init_my_module(void)
 	//cambiando permisos de la pagina
 	make_rw((unsigned long)sys_call_table);
 	//guardando el valor de memoria de la llamada original
-	real_open = (void *)sys_call_table[__NR_openat];
+	real_unlinkat = (void *)sys_call_table[__NR_unlinkat];
 	//insertando nuestra funcion a la direccion de memoria de openat
-	*(sys_call_table + __NR_openat) = (unsigned long)custom_open;
+	*(sys_call_table + __NR_unlinkat) = (unsigned long)custom_unlikat;
 	printk("hizo el cambio de pagina");
 	return 0;
 }
@@ -75,7 +75,7 @@ static void __exit cleanup_my_module(void)
 	//cambiando la direccion de memoria a modo de escritura
 	make_rw((unsigned long)sys_call_table);
 	//regresando la funcion original a la direccion de la llamada
-	*(sys_call_table + __NR_openat) = (unsigned long)real_open;
+	*(sys_call_table + __NR_unlinkat) = (unsigned long)real_unlinkat;
 	//cambiando la direccion de memoria a modo de lectura. 
 	make_ro((unsigned long)sys_call_table);
 	printk(KERN_INFO "Exiting kernel space\n");
